@@ -7,19 +7,18 @@
 %global libadwaita_version 1.3.alpha
 %global libxmlb_version 0.1.7
 %global packagekit_version 1.1.1
-
-# Disable WebApps for RHEL builds
-%{!?with_webapps: %global with_webapps !0%{?rhel}}
+%global gnome_version 44.2
+%global with_webapps 1
 
 # this is not a library version
 %define gs_plugin_version 20
 
-%global tarball_version %%(echo %{version} | tr '~' '.')
+%global tarball_version %%(echo %{gnome_version} | tr '~' '.')
 
 %global __provides_exclude_from ^%{_libdir}/%{name}/plugins-%{gs_plugin_version}/.*\\.so.*$
 
 Name:      gnome-software
-Version:   44.2
+Version:   %{gnome_version}.ublue
 Release:   1%{?dist}
 Summary:   A software center for GNOME
 
