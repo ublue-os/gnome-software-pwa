@@ -18,7 +18,7 @@
 %global __provides_exclude_from ^%{_libdir}/%{name}/plugins-%{gs_plugin_version}/.*\\.so.*$
 
 Name:      gnome-software
-Version:   %{gnome_version}.ublue
+Version:   %{gnome_version}.ublue.1
 Release:   1%{?dist}
 Summary:   A software center for GNOME
 
@@ -116,16 +116,17 @@ This package includes the rpm-ostree backend.
     -Dgudev=true \
     -Dpackagekit=true \
     -Dpackagekit_autoremove=true \
-    -Dexternal_appstream=false \
     -Drpm_ostree=true \
 %if %{with_webapps}
     -Dwebapps=true \
     -Dhardcoded_foss_webapps=true \
-    -Dhardcoded_proprietary_webapps=false \
+    -Dhardcoded_proprietary_webapps=true \
+    -Dexternal_appstream=true \
 %else
     -Dwebapps=false \
     -Dhardcoded_foss_webapps=false \
     -Dhardcoded_proprietary_webapps=false \
+    -Dexternal_appstream=false \
 %endif
     -Dtests=false
 %meson_build
