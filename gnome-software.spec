@@ -202,6 +202,8 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 %dir %{_datadir}/swcatalog
 %dir %{_datadir}/swcatalog/xml
 %if %{with_webapps}
+%{_datadir}/polkit-1/actions/org.gnome.software.*.policy
+%{_datadir}/swcatalog/xml/gnome-pwa-list-proprietary.xml
 %{_datadir}/swcatalog/xml/gnome-pwa-list-foss.xml
 %endif
 %{_datadir}/swcatalog/xml/org.gnome.Software.Curated.xml
@@ -213,6 +215,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 %{_datadir}/glib-2.0/schemas/org.gnome.software-fedora.gschema.override
 %{_libexecdir}/gnome-software-cmd
 %{_libexecdir}/gnome-software-restarter
+%if %{with_webapps}
+%{_libexecdir}/gnome-software-install-appstream
+%endif
 
 %files rpm-ostree
 %{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_rpm-ostree.so
