@@ -18,7 +18,7 @@
 %global __provides_exclude_from ^%{_libdir}/%{name}/plugins-%{gs_plugin_version}/.*\\.so.*$
 
 Name:      gnome-software
-Version:   %{gnome_version}.ublue.1
+Version:   %{gnome_version}.ublue.2
 Release:   1%{?dist}
 Summary:   A software center for GNOME
 
@@ -134,6 +134,11 @@ This package includes the rpm-ostree backend.
 %install
 %meson_install
 
+# Add extra PWA lists to the rpm
+for f in pwa-lists/gnome-pwa-list-*.xml; do
+  cp "$f" "%{buildroot}%{_datadir}/swcatalog/xml/" > /dev/null || :
+done
+
 # remove unneeded dpkg plugin
 rm %{buildroot}%{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_dpkg.so
 
@@ -203,8 +208,7 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 %dir %{_datadir}/swcatalog/xml
 %if %{with_webapps}
 %{_datadir}/polkit-1/actions/org.gnome.software.*.policy
-%{_datadir}/swcatalog/xml/gnome-pwa-list-proprietary.xml
-%{_datadir}/swcatalog/xml/gnome-pwa-list-foss.xml
+%{_datadir}/swcatalog/xml/gnome-pwa-list-*.xml
 %endif
 %{_datadir}/swcatalog/xml/org.gnome.Software.Curated.xml
 %{_datadir}/swcatalog/xml/org.gnome.Software.Featured.xml
