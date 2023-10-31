@@ -1,14 +1,19 @@
 %global appstream_version 0.14.0
-%global flatpak_version 1.5.1
-%global fwupd_version 1.3.3
-%global glib2_version 2.61.1
-%global gtk4_version 4.9.2
-%global json_glib_version 1.2.0
+%global flatpak_version 1.9.1
+%global fwupd_version 1.5.6
+%global glib2_version 2.70.0
+%global gtk4_version 4.10.0
+%global json_glib_version 1.6.0
 %global libadwaita_version 1.3.alpha
 %global libxmlb_version 0.1.7
-%global packagekit_version 1.1.1
-%global gnome_version 44.2
+%global packagekit_version 1.2.5
+%global gnome_version 45.1
 %global with_webapps 1
+
+# Disable parental control for RHEL builds
+%bcond malcontent %[!0%{?rhel}]
+# Disable rpm-ostree support for RHEL builds
+%bcond rpmostree %[!0%{?rhel}]
 
 # this is not a library version
 %define gs_plugin_version 20
@@ -24,9 +29,7 @@ Summary:   A software center for GNOME
 
 License:   GPL-2.0-or-later
 URL:       https://wiki.gnome.org/Apps/Software
-Source0:   https://download.gnome.org/sources/gnome-software/44/%{name}-%{tarball_version}.tar.xz
-
-Patch01:   0001-crash-with-broken-theme.patch
+Source0:   https://download.gnome.org/sources/gnome-software/45/%{name}-%{tarball_version}.tar.xz
 
 BuildRequires: docbook-style-xsl
 BuildRequires: desktop-file-utils
@@ -48,13 +51,17 @@ BuildRequires: pkgconfig(gudev-1.0)
 BuildRequires: pkgconfig(json-glib-1.0) >= %{json_glib_version}
 BuildRequires: pkgconfig(libadwaita-1) >= %{libadwaita_version}
 BuildRequires: pkgconfig(libdnf)
-BuildRequires: pkgconfig(libsoup-2.4)
+BuildRequires: pkgconfig(libsoup-3.0)
+%if %{with malcontent}
 BuildRequires: pkgconfig(malcontent-0)
+%endif
 BuildRequires: pkgconfig(ostree-1)
 BuildRequires: pkgconfig(packagekit-glib2) >= %{packagekit_version}
 BuildRequires: pkgconfig(polkit-gobject-1)
 BuildRequires: pkgconfig(rpm)
+%if %{with rpmostree}
 BuildRequires: pkgconfig(rpm-ostree-1)
+%endif
 BuildRequires: pkgconfig(sysprof-capture-4)
 BuildRequires: pkgconfig(xmlb) >= %{libxmlb_version}
 
@@ -93,6 +100,7 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 These development files are for building gnome-software plugins outside
 the source tree. Most users do not need this subpackage installed.
 
+%if %{with rpmostree}
 %package rpm-ostree
 Summary: rpm-ostree backend for gnome-software
 Requires: %{name}%{?_isa} = %{version}-%{release}
@@ -104,19 +112,29 @@ gnome-software is an application that makes it easy to add, remove
 and update software in the GNOME desktop.
 
 This package includes the rpm-ostree backend.
+%endif
 
 %prep
 %autosetup -p1 -S gendiff -n %{name}-%{tarball_version}
 
 %build
 %meson \
-    -Dsoup2=true \
+    -Dsoup2=false \
     -Dsnap=false \
+%if %{with malcontent}
     -Dmalcontent=true \
+%else
+    -Dmalcontent=false \
+%endif
     -Dgudev=true \
     -Dpackagekit=true \
     -Dpackagekit_autoremove=true \
+    -Dexternal_appstream=false \
+%if %{with rpmostree}
     -Drpm_ostree=true \
+%else
+    -Drpm_ostree=false \
+%endif
 %if %{with_webapps}
     -Dwebapps=true \
     -Dhardcoded_foss_webapps=true \
@@ -126,7 +144,6 @@ This package includes the rpm-ostree backend.
     -Dwebapps=false \
     -Dhardcoded_foss_webapps=false \
     -Dhardcoded_proprietary_webapps=false \
-    -Dexternal_appstream=false \
 %endif
     -Dtests=false
 %meson_build
@@ -195,14 +212,15 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 %{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_generic-updates.so
 %{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_hardcoded-blocklist.so
 %{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_icons.so
+%if %{with malcontent}
 %{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_malcontent.so
+%endif
 %{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_modalias.so
 %{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_os-release.so
 %{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_packagekit.so
 %{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_provenance-license.so
 %{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_provenance.so
 %{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_repos.so
-%{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_rewrite-resource.so
 %{_sysconfdir}/xdg/autostart/org.gnome.Software.desktop
 %dir %{_datadir}/swcatalog
 %dir %{_datadir}/swcatalog/xml
@@ -223,8 +241,10 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 %{_libexecdir}/gnome-software-install-appstream
 %endif
 
+%if %{with rpmostree}
 %files rpm-ostree
 %{_libdir}/gnome-software/plugins-%{gs_plugin_version}/libgs_plugin_rpm-ostree.so
+%endif
 
 %files devel
 %{_libdir}/pkgconfig/gnome-software.pc
@@ -236,8 +256,32 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 %{_datadir}/gtk-doc/html/gnome-software/
 
 %changelog
+* Fri Oct 20 2023 Milan Crha <mcrha@redhat.com> - 45.1-1
+- Update to 45.1
+
+* Fri Sep 15 2023 Milan Crha <mcrha@redhat.com> - 45.0-1
+- Update to 45.0
+
+* Fri Sep 01 2023 Milan Crha <mcrha@redhat.com> - 45~rc-1
+- Update to 45.rc
+
+* Mon Jul 31 2023 Milan Crha <mcrha@redhat.com> - 45~beta-1
+- Update to 45.beta
+
+* Wed Jul 19 2023 Fedora Release Engineering <releng@fedoraproject.org> - 45~alpha-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_39_Mass_Rebuild
+
+* Fri Jun 30 2023 Milan Crha <mcrha@redhat.com> - 45~alpha-1
+- Update to 45.alpha
+
+* Thu Jun 22 2023 Tomas Popela <tpopela@redhat.com> - 44.2-2
+- Disable parental control (through malcontent) and rpm-ostree support in RHEL
+
 * Fri May 26 2023 Milan Crha <mcrha@redhat.com> - 44.2-1
 - Update to 44.2
+
+* Fri May 19 2023 Milan Crha <mcrha@redhat.com> - 44.1-2
+- Rebuild for RPM
 
 * Fri Apr 21 2023 Milan Crha <mcrha@redhat.com> - 44.1-1
 - Update to 44.1
@@ -259,6 +303,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 
 * Tue Feb 14 2023 Milan Crha <mcrha@redhat.com> - 44.beta-1
 - Update to 44.beta
+
+* Thu Feb 09 2023 Michael Catanzaro <mcatanzaro@redhat.com> - 44~alpha-3
+- Switch to libsoup 3
 
 * Thu Jan 19 2023 Fedora Release Engineering <releng@fedoraproject.org> - 44~alpha-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild
